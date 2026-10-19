@@ -6,8 +6,10 @@ import type { FieldErrors } from '@/lib/validation';
 import { reservedOnDate } from '@/lib/workdays';
 import { useAuth } from './Providers';
 import s from './Common.module.css';
-export default function BookingForm({ place: initialPlace, places, date, busy, clientsResource, close, saved }: { place?: Workplace; places?: Workplace[]; date: string; busy: Busy[]; clientsResource: { data?: Client[]; loading: boolean; error: string; reload: () => void }; close: () => void; saved: () => void }) {
+import DateField from './DateField';
+export default function BookingForm({ place: initialPlace, places, date: initialDate, busy, clientsResource, close, saved }: { place?: Workplace; places?: Workplace[]; date: string; busy: Busy[]; clientsResource: { data?: Client[]; loading: boolean; error: string; reload: () => void }; close: () => void; saved: () => void }) {
   const { user } = useAuth(); const mobile = useMediaQuery('(max-width:599px)');
+  const [date, setDate] = useState(initialDate);
   const [fullDay, setFullDay] = useState(false);
   const [start, setStart] = useState(''); const [end, setEnd] = useState(''); const [clientId, setClientId] = useState(user?.role === 'admin' ? 0 : user?.clientId || 0);
   const clients = (clientsResource.data || []).filter(c => c.role === 'client');
@@ -61,6 +63,7 @@ export default function BookingForm({ place: initialPlace, places, date, busy, c
       <div><h2 className={s.heading}>{selectedPlaces.map(p => p.name).join(', ')}</h2><p className={s.muted}>{date.split('-').reverse().join('.')} · {selectedPlaces.length ? money(hourlyPrice) + '/час' : ''} · МСК</p></div>
 
 
+      {places && <DateField label="Дата записи" value={date} onChange={value => { setDate(value); setFullDay(false); setStart(''); setEnd(''); setConflicts(null); setError(''); }} />}
       {user?.role === 'admin' && <TextField select required label="Клиент" error={!!fields.clientId} helperText={fields.clientId} value={clients.some(c => c.id === clientId) ? clientId : ''} disabled={!clients.length} onChange={e => setClientId(Number(e.target.value))}>{clients.map(c => <MenuItem key={c.id} value={c.id}>{c.name} · {c.email}</MenuItem>)}</TextField>}
       {places && <><TextField select label="Мастер" error={!!fields.masterId} helperText={fields.masterId} value={masterId} disabled={clientsResource.loading} onChange={e => { const id = Number(e.target.value); setMasterId(id); const selected = masters.find(m => m.id === id); if (selected) { const first = availablePlaces.find(p => selected.workplaceIds.includes(p.id) && !reservedOnDate(p, date)); setPlaceIds(first ? [first.id] : []); } setFullDay(false); setStart(''); setEnd(''); }}><MenuItem value={0}>Без мастера</MenuItem>{masters.map(m => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}</TextField>
       <TextField select required label="Рабочие места" error={!!fields.placeIds} value={selectedPlaces.map(p => p.id)} slotProps={{ select: { multiple: true, renderValue: value => (value as number[]).map(id => choices.find(p => p.id === id)?.name).join(', ') } }} onChange={e => { const value = e.target.value as unknown as number[] | string; setPlaceIds(typeof value === 'string' ? value.split(',').filter(Boolean).map(Number) : value); setFullDay(false); setStart(''); setEnd(''); }} helperText={fields.placeIds || 'Можно выбрать несколько мест. Время записи общее для всех.'}>{choices.map(p => <MenuItem key={p.id} value={p.id} disabled={reservedOnDate(p, date)}><Checkbox checked={placeIds.includes(p.id)} />{p.name} · {money(p.hourlyPrice)}/час{reservedOnDate(p, date) && ' · Занято мастером'}</MenuItem>)}</TextField>

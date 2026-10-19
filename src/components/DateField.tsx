@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { TextField } from '@mui/material';
 import s from './DateField.module.css';
 
-export default function DateField({ value, onChange, min }: { value: string; onChange: (value: string) => void; min?: string }) {
+export default function DateField({ value, onChange, min, label = 'Дата' }: { value: string; onChange: (value: string) => void; min?: string; label?: string }) {
   const input = useRef<HTMLInputElement>(null);
   function openCalendar() {
     const field = input.current;
@@ -16,7 +16,7 @@ export default function DateField({ value, onChange, min }: { value: string; onC
     className={s.field}
     inputRef={input}
     type="date"
-    label="Дата"
+    label={label}
     value={value}
     onClick={openCalendar}
     onChange={e => { if (e.target.value) onChange(e.target.value); }}

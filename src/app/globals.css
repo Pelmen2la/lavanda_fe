@@ -1,4 +1,4 @@
-:root { color-scheme: light; --lavender: #765598; --ink: #312c39; --muted: #736b7d; --line: #e8e2eb; --surface: #fbf9f6; }
+:root { color-scheme: light; --lavender: #765598; --ink: #312c39; --muted: #736b7d; --line: #e8e2eb; --surface: #ffffff; }
 @layer reset {
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--surface); color: var(--ink); font: 16px/1.6 Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }

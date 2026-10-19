@@ -9,7 +9,7 @@ const theme = createTheme({
   palette: {
     primary: { main: '#765598', dark: '#593d77', light: '#efe6f7' },
     secondary: { main: '#65775b' },
-    background: { default: '#fbf9f6', paper: '#ffffff' },
+    background: { default: '#ffffff', paper: '#ffffff' },
     text: { primary: '#312c39', secondary: '#736b7d' },
   },
 });

@@ -36,9 +36,9 @@ export default function Schedule() {
         const intervals: (Busy | Booking)[] = busy.filter(b => b.workplaceId === p.id).map(b => ({ ...b, own: 'clientId' in b ? b.clientId === user?.clientId : b.own }));
         if (reserved && isAdmin) intervals.push({ workplaceId: p.id, start: date + 'T09:00:00+03:00', end: date + 'T21:00:00+03:00' });
 
-        return <article key={p.id} className={s.panel}><div className={s.stack}><div><h2 className={s.heading}>{p.name}</h2><p className={s.muted}>{money(p.hourlyPrice)} / час</p></div><p className={s.note}>{p.description}</p>
+        return <article key={p.id} className={`${s.panel} ${s.workplaceCard}`}><div className={s.stack}><div><h2 className={s.heading}>{p.name}</h2><p className={s.muted}>{money(p.hourlyPrice)} / час</p></div><p className={s.note}>{p.description}</p>
           <AvailabilityTimeline key={date} date={date} intervals={intervals} bookings={isAdmin ? intervals.filter((b): b is Booking => 'clientName' in b) : undefined} />
-          {user?.role === 'master' ? <Link className={s.link} href="/account/">Мои записи →</Link> : user ? <Button variant="outlined" disabled={reserved} onClick={() => setSelected(p)}>Забронировать</Button> : <Link className={s.link} href="/login/">Войти для бронирования →</Link>}
+          <div className={s.workplaceActions}>{user?.role === 'master' ? <Link className={s.link} href="/account/">Мои записи →</Link> : user ? <Button variant="outlined" disabled={reserved} onClick={() => setSelected(p)}>Забронировать</Button> : <Link className={s.link} href="/login/">Войти для бронирования →</Link>}</div>
         </div></article>;
       })}</div> : <div className={s.empty}><h2 className={s.heading}>Места скоро появятся</h2><p>Администратор ещё не добавил доступные для бронирования рабочие места.</p>{user?.role === 'admin' && <Link className={s.link} href="/admin/">Добавить первое место</Link>}</div>)}
     </div>{selected && user?.role !== 'master' && <BookingForm place={selected} date={date} busy={busy} clientsResource={clientsResource} close={() => setSelected(null)} saved={() => { setSelected(null); setSuccess('Место забронировано.'); busyResource.reload(); }} />}

@@ -1,4 +1,4 @@
-.header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); background: rgb(251 249 246 / 96%); backdrop-filter: blur(12px); }
+.header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); background: rgb(255 255 255 / 96%); backdrop-filter: blur(12px); }
 .bar { max-width: 1240px; margin: auto; padding: 14px 20px 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: Georgia, serif; font-size: 29px; letter-spacing: -1px; line-height: 1; }
 .brand small { display: block; margin-top: 5px; font: 9px Arial, sans-serif; letter-spacing: 1.7px; text-transform: uppercase; }
