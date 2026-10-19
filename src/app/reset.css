@@ -1,0 +1,3 @@
+/* Reset must precede MUI in the cascade, even when Emotion streams its styles later. */
+@layer reset, mui;
+@import 'reset-css' layer(reset);

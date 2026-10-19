@@ -1,0 +1,20 @@
+.root { min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.bar { display: flex; height: 40px; border-radius: 6px; }
+.segment { flex-basis: 0; min-width: 0; padding: 0; border: 0; cursor: pointer; touch-action: manipulation; }
+.segment + .segment { box-shadow: inset 1px 0 0 white; }
+.details { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.segment:first-child { border-radius: 6px 0 0 6px; }
+.segment:last-child { border-radius: 0 6px 6px 0; }
+.segment:only-child { border-radius: 6px; }
+.segment:focus-visible { outline: 2px solid var(--text, #312c39); outline-offset: 2px; z-index: 1; }
+.ticks { position: relative; height: 30px; margin-top: 3px; font-size: 11px; color: var(--muted); }
+.tick { position: absolute; top: 0; width: 1px; height: 5px; background: currentColor; transform: translateX(-50%); }
+.majorTick { height: 10px; }
+.tickLabel { position: absolute; top: 13px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+.tick:first-child { transform: none; }
+.tick:last-child { transform: translateX(-100%); }
+.tick:first-child .tickLabel { left: 0; transform: none; }
+.tick:last-child .tickLabel { left: auto; right: 0; transform: none; }

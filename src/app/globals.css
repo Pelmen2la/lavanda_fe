@@ -1,0 +1,11 @@
+:root { color-scheme: light; --lavender: #765598; --ink: #312c39; --muted: #736b7d; --line: #e8e2eb; --surface: #fbf9f6; }
+@layer reset {
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--ink); font: 16px/1.6 Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3 { line-height: 1.15; font-weight: 500; }
+  strong { font-weight: 600; }
+  p { overflow-wrap: anywhere; }
+}
+html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

@@ -1,0 +1,18 @@
+.header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); background: rgb(251 249 246 / 96%); backdrop-filter: blur(12px); }
+.bar { max-width: 1240px; margin: auto; padding: 14px 20px 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: Georgia, serif; font-size: 29px; letter-spacing: -1px; line-height: 1; }
+.brand small { display: block; margin-top: 5px; font: 9px Arial, sans-serif; letter-spacing: 1.7px; text-transform: uppercase; }
+.mark { font-size: 42px; color: var(--lavender); }
+.auth { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.userName { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.login { display: inline-flex; gap: 16px; min-height: 44px; align-items: center; font-size: 14px; }
+.nav { grid-column: 1 / -1; display: flex; gap: 24px; overflow-x: auto; white-space: nowrap; }
+.nav a { min-height: 48px; display: inline-flex; align-items: center; color: var(--muted); font-size: 13px; border-bottom: 2px solid transparent; }
+.nav a:hover, .nav a[aria-current] { color: var(--lavender); border-color: var(--lavender); }
+.main { min-height: 70vh; }
+.footer { max-width: 1200px; margin: 30px auto 0; padding: 28px 20px 40px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-size: 13px; }
+.footerName { font: 28px Georgia, serif; color: var(--ink); }
+.skip { position: fixed; z-index: 100; left: 12px; top: -80px; background: white; padding: 12px; }
+.skip:focus { top: 12px; }
+@media (min-width: 600px) { .auth { grid-column: 2; grid-row: 1; } }
+@media (min-width: 760px) { .bar { display: flex; padding: 20px 32px; gap: 40px; } .nav { margin-left: auto; } .nav a { font-size: 14px; min-height: 40px; } .footer { flex-direction: row; align-items: center; gap: 32px; padding-inline: 32px; } .footer span:last-child { margin-left: auto; } }
