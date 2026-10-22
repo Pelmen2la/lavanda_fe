@@ -1,0 +1,31 @@
+.datePicker { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.dateToolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.week { display: grid; grid-template-columns: 28px repeat(7, minmax(0, 1fr)) 28px; gap: 4px; }
+.day, .weekArrow { cursor: pointer; border: 0; background: transparent; color: var(--ink); font: inherit; border-radius: 14px; }
+.day { min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.day span:first-child { font-size: 12px; text-transform: capitalize; }
+.day strong { font-size: 21px; }
+.day:hover, .weekArrow:hover { background: #f3edf7; }
+.day.selected { background: var(--lavender); color: white; }
+.todayDot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.weekArrow { font-size: 26px; }
+.hint { color: var(--muted); font-size: 13px; }
+.viewport { max-height: 72vh; overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: white; isolation: isolate; }
+.calendar { display: grid; grid-template-columns: 64px repeat(var(--places), minmax(190px, 1fr)); min-width: 100%; width: max-content; padding-bottom: 18px; }
+.columnTitle { position: sticky; top: 0; z-index: 3; padding: 14px 12px; background: #faf7fc; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.columnTitle small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+.corner { position: sticky; left: 0; top: 0; z-index: 4; background: #faf7fc; padding: 16px 8px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.hours { position: sticky; left: 0; z-index: 2; height: 1920px; background: white; }
+.hours span { position: absolute; right: 9px; font-size: 11px; color: var(--muted); line-height: 18px; transform: translateY(-50%); }
+.hours span:first-child { transform: none; }
+.column { height: 1920px; position: relative; border-right: 1px solid var(--line); background: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent 40px); }
+.reserved { background-color: #f6f3f8; }
+.booking { position: absolute; left: 4px; right: 4px; display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 8px 10px; border: 1px solid #d9c9e7; border-left: 3px solid var(--lavender); border-radius: 9px; background: #eee4f6; color: var(--ink); cursor: pointer; text-align: left; font: 12px/1.4 Arial, sans-serif; overflow: hidden; }
+.booking > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+.booking strong { font-size: 14px; }
+.bookingTime { font-weight: 600; }
+.completed { background: #eeedf0; border-color: #d8d5dc; border-left-color: #9a93a2; }
+.booking:hover { filter: brightness(.97); }
+.booking:focus-visible, .day:focus-visible, .weekArrow:focus-visible { outline: 2px solid var(--lavender); outline-offset: 2px; z-index: 1; }
+.empty { padding: 36px; color: var(--muted); text-align: center; }
+@media (max-width: 599px) { .week { gap: 1px; grid-template-columns: 22px repeat(7, minmax(0, 1fr)) 22px; } .calendar { grid-template-columns: 52px repeat(var(--places), 180px); } }

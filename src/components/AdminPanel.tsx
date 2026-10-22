@@ -9,6 +9,7 @@ import BookingForm from '@/components/BookingForm';
 import PhoneField from '@/components/PhoneField';
 import DateField from '@/components/DateField';
 import BookingList from '@/components/BookingList';
+import BookingCalendar, { CalendarDatePicker } from '@/components/BookingCalendar';
 import { api, Booking, Client, message, money, today, Workplace } from '@/lib/api';
 import { validateClient, validatePlace, type FieldErrors } from '@/lib/validation';
 import { weekdays } from '@/lib/workdays';
@@ -18,12 +19,24 @@ import s from '@/components/Common.module.css';
 type Invitation = { url: string; expiresAt: string; expired: boolean };
 type ClientDraft = { id?: number; name: string; phone: string; email: string; note: string; registered: boolean; role: Client['role']; workplaceIds: number[]; workDays: number[]; reserveWorkdays: boolean };
 type PlaceDraft = { id?: number; name: string; description: string; price: string; active: boolean };
+const bookingDatesStorageKey = 'lavanda.admin.bookings.dates';
+const bookingViewStorageKey = 'lavanda.admin.bookings.view';
+function validStoredDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
 export default function AdminPanel() {
   const { user, loading: authLoading, unavailable, refresh } = useAuth(); const mobile = useMediaQuery('(max-width:599px)');
   const pathname = usePathname(); const router = useRouter(); const params = useSearchParams();
   const profile = pathname.replace(/\/$/, '') === '/admin/clients/profile'; const profileId = params.get('id') || '';
   const tab = pathname.replace(/\/$/, '') === '/admin/workplaces' ? 'places' : pathname.startsWith('/admin/clients') ? 'clients' : 'bookings';
   const [date, setDate] = useState(''); const [dateTo, setDateTo] = useState('');
+  const [bookingView, setBookingView] = useState<'list' | 'timeline'>('list');
+  const [timelineDate, setTimelineDate] = useState('');
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const fromDate = bookingView === 'timeline' ? timelineDate : date;
+  const toDate = bookingView === 'timeline' ? timelineDate : dateTo;
   const [actionError, setError] = useState(''); const setNotice = useNotify(); const [pending, setPending] = useState(false);
   const [client, setClient] = useState<ClientDraft | null>(null); const [place, setPlace] = useState<PlaceDraft | null>(null); const [formError, setFormError] = useState('');
   const [invite, setInvite] = useState<(Invitation & { client: Client }) | null>(null); const [inviteError, setInviteError] = useState(''); const setInviteNotice = setNotice; const [bookingOpen, setBookingOpen] = useState(false); const [search, setSearch] = useState(''); const [roleFilter, setRoleFilter] = useState<'client' | 'master' | 'all'>('all');
@@ -34,19 +47,56 @@ export default function AdminPanel() {
   const isAdmin = user?.role === 'admin';
   const clientsResource = useApiResource<Client[]>('/admin/clients', isAdmin && ((tab === 'clients' && !profile) || bookingOpen), user?.id);
   const placesResource = useApiResource<Workplace[]>('/admin/workplaces', isAdmin && (tab === 'places' || tab === 'bookings' || profile || client?.role === 'master'), user?.id);
-  const bookingsResource = useApiResource<Booking[]>(`/admin/bookings?from=${date}&to=${dateTo}`, isAdmin && tab === 'bookings' && !!date && !!dateTo && dateTo >= date, user?.id, false);
+  const bookingsResource = useApiResource<Booking[]>(`/admin/bookings?from=${fromDate}&to=${toDate}`, isAdmin && tab === 'bookings' && !!fromDate && !!toDate && toDate >= fromDate, user?.id, false);
   const profileResource = useApiResource<{ client: Client; bookings: Booking[] }>(`/admin/clients/${profileId}`, isAdmin && profile && /^[1-9][0-9]*$/.test(profileId), user?.id);
   const clients = clientsResource.data || []; const places = placesResource.data || []; const bookings = bookingsResource.data || [];
   const busy = bookings.filter(booking => !booking.cancelledAt);
   const loading = tab === 'clients' ? clientsResource.loading : tab === 'places' ? placesResource.loading : placesResource.loading || bookingsResource.loading || !date;
-  const error = (tab === 'bookings' && dateTo && dateTo < date ? 'Дата окончания не может быть раньше даты начала' : '') || actionError || (tab === 'clients' ? clientsResource.error : tab === 'places' ? placesResource.error : placesResource.error || bookingsResource.error);
+  const error = (tab === 'bookings' && bookingView === 'list' && dateTo && dateTo < date ? 'Дата окончания не может быть раньше даты начала' : '') || actionError || (tab === 'clients' ? clientsResource.error : tab === 'places' ? placesResource.error : placesResource.error || bookingsResource.error);
   const reload = () => {
     setError('');
     if (tab === 'clients') clientsResource.reload();
     else if (tab === 'places') placesResource.reload();
     else { placesResource.reload(); bookingsResource.reload(); }
   };
-  useEffect(() => { const initial = today(); setDate(initial); setDateTo(initial); }, []);
+  useEffect(() => {
+    const initial = today();
+    let from = initial; let to = initial; let day = initial; let view: 'list' | 'timeline' = 'list';
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(bookingDatesStorageKey) || 'null');
+      if (validStoredDate(saved?.from) && validStoredDate(saved?.to) && saved.to >= saved.from) {
+        from = saved.from; to = saved.to;
+      }
+      if (validStoredDate(saved?.day)) day = saved.day;
+    } catch { /* Use today's date if storage is unavailable or contains invalid JSON. */ }
+    try {
+      const savedView = localStorage.getItem(bookingViewStorageKey);
+      if (savedView === 'timeline') view = 'timeline';
+      if (!savedView) {
+        // Preserve the old view preference, but no longer restore persistent dates.
+        try {
+          const legacy = JSON.parse(localStorage.getItem(bookingDatesStorageKey) || 'null');
+          if (legacy?.view === 'timeline') view = 'timeline';
+        } catch { /* Ignore malformed legacy preferences. */ }
+      }
+      localStorage.setItem(bookingViewStorageKey, view);
+      localStorage.removeItem(bookingDatesStorageKey);
+    } catch { /* The view remains usable when local storage is unavailable. */ }
+    setDate(from); setDateTo(to); setTimelineDate(day); setBookingView(view);
+    setPreferencesReady(true);
+  }, []);
+  useEffect(() => {
+    // Empty initial values must not overwrite the saved range before it is restored.
+    if (!preferencesReady || !isAdmin || tab !== 'bookings' || !validStoredDate(date) || !validStoredDate(dateTo) || dateTo < date || !validStoredDate(timelineDate)) return;
+    try {
+      sessionStorage.setItem(bookingDatesStorageKey, JSON.stringify({ from: date, to: dateTo, day: timelineDate }));
+    } catch { /* Date selection still works when browser storage is unavailable. */ }
+  }, [date, dateTo, timelineDate, preferencesReady, isAdmin, tab]);
+  useEffect(() => {
+    if (!preferencesReady || !isAdmin || tab !== 'bookings') return;
+    try { localStorage.setItem(bookingViewStorageKey, bookingView); }
+    catch { /* View selection still works when browser storage is unavailable. */ }
+  }, [bookingView, preferencesReady, isAdmin, tab]);
   useEffect(() => { setError(''); setClient(null); setPlace(null); setInvite(null); setDeleting(null); setBookingOpen(false); }, [pathname]);
   async function saveClient(e: React.FormEvent) {
     e.preventDefault(); if (!client || pending) return; setAttempted(true); setFormError(''); if (Object.keys(validateClient(client)).length) return; setPending(true);
@@ -94,9 +144,11 @@ export default function AdminPanel() {
   return <div className={s.page}><p className={s.eyebrow}>УПРАВЛЕНИЕ ПРОСТРАНСТВОМ</p><h1 className={s.title}>Панель администратора</h1><p className={s.subtitle}>Записи, рабочие места и ваши клиенты — в одном месте.</p>
     <nav className={s.tabs} aria-label="Разделы администрирования">{[['bookings', 'Записи', '/admin/bookings/'], ['places', 'Рабочие места', '/admin/workplaces/'], ['clients', 'Клиенты и мастера', '/admin/clients/']].map(([value, label, href]) => <Button component={Link} href={href} key={value} variant={tab === value ? 'contained' : 'outlined'} aria-current={tab === value ? 'page' : undefined}>{label}</Button>)}</nav>
     <div className={s.stack}>{error && <Alert severity="error" action={<Button onClick={reload}>Повторить</Button>}>{error}</Alert>}
-      {tab === 'bookings' && <><div className={s.row}><DateField label="С даты" value={date} onChange={value => { setDate(value); if (dateTo < value) setDateTo(value); }} /><DateField label="По дату включительно" value={dateTo} min={date} onChange={setDateTo} /><Button onClick={reload} disabled={loading}>Обновить</Button></div>
-        <div><Button variant="contained" disabled={loading || !!error} onClick={() => setBookingOpen(true)}>Записать клиента</Button></div>
-        {loading ? <Skeleton variant="rounded" height={180} /> : !error && <BookingList bookings={bookings} admin reload={bookingsResource.reload} />}</>}
+      {tab === 'bookings' && <>
+        <div className={s.row} role="group" aria-label="Вид записей"><Button variant={bookingView === 'list' ? 'contained' : 'outlined'} aria-pressed={bookingView === 'list'} onClick={() => setBookingView('list')}>Список</Button><Button variant={bookingView === 'timeline' ? 'contained' : 'outlined'} aria-pressed={bookingView === 'timeline'} onClick={() => setBookingView('timeline')}>Таймлайн</Button></div>
+        {bookingView === 'timeline' ? <CalendarDatePicker date={timelineDate} onChange={setTimelineDate} /> : <div className={s.row}><DateField label="С даты" value={date} onChange={value => { setDate(value); if (dateTo < value) setDateTo(value); }} /><DateField label="По дату включительно" value={dateTo} min={date} onChange={setDateTo} /></div>}
+        <div className={s.row}><Button variant="contained" disabled={loading || !!error} onClick={() => setBookingOpen(true)}>Записать клиента</Button><Button onClick={reload} disabled={loading}>Обновить</Button></div>
+        {loading ? <Skeleton variant="rounded" height={180} /> : !error && (bookingView === 'timeline' ? <BookingCalendar key={timelineDate} date={timelineDate} places={places} bookings={bookings} reload={bookingsResource.reload} /> : <BookingList bookings={bookings} admin reload={bookingsResource.reload} />)}</>}
       {profile && <><Link className={s.link} href="/admin/clients/">← Все пользователи</Link>{!/^[1-9][0-9]*$/.test(profileId) ? <Alert severity="error">Некорректный адрес пользователя</Alert> : profileResource.loading ? <Skeleton height={200} /> : profileResource.error ? <Alert severity="error" action={<Button onClick={profileResource.reload}>Повторить</Button>}>{profileResource.error}</Alert> : profileResource.data && <><section className={s.panel}><div className={s.stack}><h2 className={s.heading}>{profileResource.data.client.name}</h2><p>{profileResource.data.client.role === 'master' ? 'Мастер' : profileResource.data.client.role === 'admin' ? 'Администратор' : 'Клиент'}</p><p>Email: {profileResource.data.client.email || 'Не указан'}</p><p>Телефон: {profileResource.data.client.phone || 'Не указан'}</p><p className={s.muted}>Дата создания: {new Date(profileResource.data.client.createdAt).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })}</p><p>{profileResource.data.client.registered ? 'Аккаунт создан' : 'Без аккаунта'}</p>{profileResource.data.client.note && <p className={s.note}>Заметка: {profileResource.data.client.note}</p>}{profileResource.data.client.role === 'master' && <><p>Рабочие места: {profileResource.data.client.workplaceIds.map(id => places.find(p => p.id === id)?.name || `№${id}`).join(', ') || 'Не назначены'}</p><p>Рабочие дни: {weekdays.filter(day => profileResource.data!.client.workDays.includes(day.value)).map(day => day.label).join(', ') || 'Не заданы'}</p><p>Резервировать места по рабочим дням: {profileResource.data.client.reserveWorkdays ? 'Да' : 'Нет'}</p></>}<div className={s.actions}><Button onClick={() => { setAttempted(false); setFormError(''); setClient(profileResource.data!.client); }}>Изменить</Button>{!profileResource.data.client.registered && <Button disabled={pending} onClick={() => openInvite(profileResource.data!.client)}>{profileResource.data.client.hasInvitation ? 'Открыть приглашение' : 'Выдать приглашение'}</Button>}</div></div></section><h2 className={s.heading}>Записи пользователя</h2><BookingList bookings={profileResource.data.bookings} admin reload={profileResource.reload} /></>}</>}
       {tab === 'places' && <><div><Button variant="contained" onClick={() => { setAttempted(false); setFormError(''); setPlace({ name: '', description: '', price: '', active: true }); }}>+ Добавить место</Button></div>{loading ? <Skeleton height={160} /> : !error && (places.length ? <div className={s.grid}>{places.map(p => <article key={p.id} className={`${s.panel} ${s.workplaceCard}`}><div className={s.stack}><div className={s.cardTop}><div><h2 className={s.heading}>{p.name}</h2><p>{money(p.hourlyPrice)}/час</p></div><Chip size="small" label={p.active ? 'Доступно' : 'Скрыто'} /></div><p className={`${s.muted} ${s.note}`}>{p.description}</p><div className={s.workplaceActions}><Button variant="outlined" onClick={() => { setAttempted(false); setFormError(''); setPlace({ id: p.id, name: p.name, description: p.description, price: String(p.hourlyPrice / 100), active: p.active }); }}>Редактировать</Button><Button color="error" disabled={pending} onClick={() => { setDeleteError(''); setDeleting({ kind: 'workplaces', id: p.id, name: p.name }); }}>Удалить</Button></div></div></article>)}</div> : <div className={s.empty}>Добавьте первое рабочее место, чтобы открыть бронирование.</div>)}</>}
       {tab === 'clients' && !profile && <><div className={s.clientToolbar}><TextField fullWidth label="Поиск по имени, телефону или email" value={search} onChange={e => setSearch(e.target.value)} /><Button variant="contained" onClick={() => { setAttempted(false); setFormError(''); setClient({ name: '', phone: '', email: '', note: '', registered: false, role: 'client', workplaceIds: [], workDays: [], reserveWorkdays: false }); }}>+ Добавить пользователя</Button></div><div className={s.roleFilter}><TextField select fullWidth label="Роль" value={roleFilter} onChange={e => setRoleFilter(e.target.value as 'client' | 'master' | 'all')}><MenuItem value="all">Все пользователи</MenuItem><MenuItem value="client">Клиенты</MenuItem><MenuItem value="master">Мастера</MenuItem></TextField></div>{loading ? <Skeleton height={160} /> : !error && <div className={s.grid}>{clients.filter(c => c.role !== 'admin' && (roleFilter === 'all' || c.role === roleFilter) && `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(search.toLowerCase())).map(c => <article key={c.id} className={s.panel}><div className={s.stack}><div><h2 className={s.heading}><Link href={`/admin/clients/profile/?id=${c.id}`}>{c.name}</Link></h2><p className={s.muted}>{c.email}</p><p className={s.muted}>{c.phone}</p>{c.createdAt && <p className={s.muted}>Дата создания: <time dateTime={c.createdAt}>{new Date(c.createdAt).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })}</time></p>}</div><Chip label={c.role === 'master' ? 'Мастер' : 'Клиент'} size="small" /><Chip label={c.registered ? 'Аккаунт создан' : 'Без аккаунта'} size="small" sx={{ alignSelf: 'flex-start' }} />{c.note && <p className={`${s.notice} ${s.note}`}>Заметка: {c.note}</p>}<div className={s.actions}><Button variant="outlined" onClick={() => { setAttempted(false); setFormError(''); setClient(c); }}>Изменить</Button>{c.id !== user.clientId && <Button color="error" disabled={pending} onClick={() => { setDeleteError(''); setDeleting({ kind: 'clients', id: c.id, name: c.name }); }}>Удалить</Button>}{!c.registered && <Button disabled={pending} onClick={() => openInvite(c)}>{c.hasInvitation ? 'Открыть приглашение' : 'Выдать приглашение'}</Button>}</div></div></article>)}</div>}</>}
@@ -131,6 +183,6 @@ export default function AdminPanel() {
       </div></DialogContent>
       {deleteError && <div className={s.formError}><Alert severity="error">{deleteError}</Alert></div>}<DialogActions><Button disabled={pending} onClick={() => setDeleting(null)}>Отмена</Button><Button color="error" variant="contained" disabled={pending} onClick={confirmDelete}>{pending ? 'Удаляем…' : 'Удалить'}</Button></DialogActions>
     </Dialog>
-    {bookingOpen && <BookingForm places={places} date={date} busy={busy} clientsResource={clientsResource} close={() => setBookingOpen(false)} saved={() => { setBookingOpen(false); setNotice('Бронь создана.'); bookingsResource.reload(); }} />}
+    {bookingOpen && <BookingForm places={places} date={fromDate} busy={busy} clientsResource={clientsResource} close={() => setBookingOpen(false)} saved={() => { setBookingOpen(false); setNotice('Бронь создана.'); bookingsResource.reload(); }} />}
   </div>;
 }
