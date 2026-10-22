@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { TextField } from '@mui/material';
 import { formatPhone, phoneCaret, phoneDigits } from '@/lib/phone';
 
-export default function PhoneField({ value, onChange, error, helperText }: { value: string; onChange: (value: string) => void; error?: boolean; helperText?: string }) {
+export default function PhoneField({ value, onChange, error, helperText, required, disabled }: { value: string; onChange: (value: string) => void; error?: boolean; helperText?: string; required?: boolean; disabled?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const formatted = formatPhone(value);
   function update(next: string, count: number) {
@@ -12,6 +12,8 @@ export default function PhoneField({ value, onChange, error, helperText }: { val
   }
   return <TextField
     label="Телефон"
+    required={required}
+    disabled={disabled}
     error={error}
     helperText={helperText}
     type="tel"
