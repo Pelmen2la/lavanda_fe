@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import ts from 'typescript';
 const source = await readFile(new URL('../src/lib/bookingCalendar.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { shiftDay, weekDays, calendarBookings } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { shiftDay, weekDays, calendarBookings, calendarLanes } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
 test('week navigation crosses month and year boundaries and starts on Monday', () => {
   assert.equal(shiftDay('2026-12-31', 1), '2027-01-01');
@@ -23,4 +23,10 @@ test('places bookings in Moscow hours, clips boundaries and excludes cancellatio
   assert.deepEqual(calendarBookings('2026-10-22', bookings).map(e => [e.booking.id, e.minute, e.duration]), [[2, 0, 30], [1, 15, 30], [3, 690, 30]]);
   assert.equal(bookings[0].id, 1);
   assert.deepEqual(calendarBookings('2026-10-22', []), []);
+});
+
+test('simultaneous child bookings remain visible side by side in a room column', () => {
+  const result = calendarLanes([{ minute: 0, duration: 60 }, { minute: 15, duration: 30 }, { minute: 45, duration: 30 }, { minute: 90, duration: 30 }]);
+  assert.deepEqual(result.map(e => [e.lane, e.lanes]), [[0, 2], [1, 2], [1, 2], [0, 1]]);
+  assert.deepEqual(calendarLanes([]), []);
 });

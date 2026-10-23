@@ -25,6 +25,7 @@
 .booking strong { font-size: 14px; }
 .bookingTime { font-weight: 600; }
 .completed { background: #eeedf0; border-color: #d8d5dc; border-left-color: #9a93a2; }
+.linkedBooking { background: #fde7e7; border-color: #e8a0a0; border-left-color: #c62828; color: #891c1c; }
 .booking:hover { filter: brightness(.97); }
 .booking:focus-visible, .day:focus-visible, .weekArrow:focus-visible { outline: 2px solid var(--lavender); outline-offset: 2px; z-index: 1; }
 .empty { padding: 36px; color: var(--muted); text-align: center; }

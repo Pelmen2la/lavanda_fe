@@ -1,7 +1,7 @@
-export type TimeSegment = { start: number; end: number; busy: boolean; past?: boolean; own?: boolean };
+export type TimeSegment = { start: number; end: number; busy: boolean; past?: boolean; own?: boolean; direct?: boolean };
 
 // Minutes since opening, calculated from absolute timestamps in Moscow time.
-export function timeline(date: string, intervals: { start: string; end: string; own?: boolean }[], now?: number): TimeSegment[] {
+export function timeline(date: string, intervals: { start: string; end: string; own?: boolean; booked?: boolean; blockedByName?: string }[], now?: number): TimeSegment[] {
   const opening = Date.parse(`${date}T09:00:00+03:00`);
   const ranges = intervals.map(interval => ({
     start: Math.max(0, (Date.parse(interval.start) - opening) / 60000),
@@ -22,17 +22,26 @@ export function timeline(date: string, intervals: { start: string; end: string; 
     cursor = range.end;
   }
   if (cursor < 720) segments.push({ start: cursor, end: 720, busy: false });
-  const ownRanges = intervals.filter(interval => interval.own).map(interval => ({
+  const ownRanges = intervals.filter(interval => interval.own && !interval.blockedByName).map(interval => ({
+    start: Math.max(0, (Date.parse(interval.start) - opening) / 60000),
+    end: Math.min(720, (Date.parse(interval.end) - opening) / 60000),
+  }));
+  const linkedRanges = intervals.filter(interval => interval.blockedByName).map(interval => ({
+    start: Math.max(0, (Date.parse(interval.start) - opening) / 60000),
+    end: Math.min(720, (Date.parse(interval.end) - opening) / 60000),
+  }));
+  const directRanges = intervals.filter(interval => interval.booked && !interval.blockedByName).map(interval => ({
     start: Math.max(0, (Date.parse(interval.start) - opening) / 60000),
     end: Math.min(720, (Date.parse(interval.end) - opening) / 60000),
   }));
   const colored = segments.flatMap(segment => {
     if (!segment.busy) return [segment];
-    const boundaries = Array.from(new Set([segment.start, segment.end, ...ownRanges.flatMap(range => [range.start, range.end]).filter(point => point > segment.start && point < segment.end)])).sort((a, b) => a - b);
+    const boundaries = Array.from(new Set([segment.start, segment.end, ...[...ownRanges, ...linkedRanges, ...directRanges].flatMap(range => [range.start, range.end]).filter(point => point > segment.start && point < segment.end)])).sort((a, b) => a - b);
     return boundaries.slice(0, -1).map((start, index) => {
       const end = boundaries[index + 1];
       const own = ownRanges.some(range => range.start <= start && range.end >= end);
-      return { ...segment, start, end, ...(own ? { own: true } : {}) };
+      const direct = directRanges.some(range => range.start <= start && range.end >= end);
+      return { ...segment, start, end, ...(own ? { own: true } : {}), ...(direct ? { direct: true } : {}) };
     });
   });
   if (now === undefined) return colored;

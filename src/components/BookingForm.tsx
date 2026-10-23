@@ -1,15 +1,32 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, TextField, useMediaQuery } from '@mui/material';
 import { api, ApiError, Booking, Busy, Client, clock, instant, message, money, times, Workplace } from '@/lib/api';
 import type { FieldErrors } from '@/lib/validation';
 import { reservedOnDate } from '@/lib/workdays';
+import { bookingBlocksPlace, overlappingPlaces } from '@/lib/linkedPlaces';
 import { useAuth } from './Providers';
 import s from './Common.module.css';
 import DateField from './DateField';
+const bookingDateStorageKey = 'lavanda.booking.date';
 export default function BookingForm({ place: initialPlace, places, date: initialDate, busy, clientsResource, close, saved }: { place?: Workplace; places?: Workplace[]; date: string; busy: Busy[]; clientsResource: { data?: Client[]; loading: boolean; error: string; reload: () => void }; close: () => void; saved: () => void }) {
   const { user } = useAuth(); const mobile = useMediaQuery('(max-width:599px)');
   const [date, setDate] = useState(initialDate);
+  const hasDatePicker = !!places;
+  useEffect(() => {
+    if (!hasDatePicker) return;
+    try {
+      const stored = sessionStorage.getItem(bookingDateStorageKey);
+      if (!stored || !/^\d{4}-\d{2}-\d{2}$/.test(stored)) return;
+      const parsed = new Date(`${stored}T00:00:00Z`);
+      if (Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === stored) setDate(stored);
+    } catch { /* Keep the supplied date when session storage is unavailable. */ }
+  }, [hasDatePicker]);
+  function changeDate(value: string) {
+    setDate(value); setFullDay(false); setStart(''); setEnd(''); setConflicts(null); setError('');
+    try { sessionStorage.setItem(bookingDateStorageKey, value); }
+    catch { /* Booking remains available when browser storage is disabled. */ }
+  }
   const [fullDay, setFullDay] = useState(false);
   const [start, setStart] = useState(''); const [end, setEnd] = useState(''); const [clientId, setClientId] = useState(user?.role === 'admin' ? 0 : user?.clientId || 0);
   const clients = (clientsResource.data || []).filter(c => c.role === 'client');
@@ -25,7 +42,7 @@ export default function BookingForm({ place: initialPlace, places, date: initial
   const [error, setError] = useState(''); const [pending, setPending] = useState(false);
   const isAdmin = user?.role === 'admin';
   const [conflicts, setConflicts] = useState<Booking[] | null>(null);
-  const overlaps = (from: string, to: string) => busy.some(b => selectedPlaces.some(p => p.id === b.workplaceId) && Date.parse(instant(date, from)) < Date.parse(b.end) && Date.parse(instant(date, to)) > Date.parse(b.start));
+  const overlaps = (from: string, to: string) => busy.some(b => selectedPlaces.some(p => bookingBlocksPlace(b, p)) && Date.parse(instant(date, from)) < Date.parse(b.end) && Date.parse(instant(date, to)) > Date.parse(b.start));
   const starts = times.slice(0, -2).filter((t, i) => Date.parse(instant(date, t)) > Date.now() && (isAdmin || !overlaps(t, times[i + 2])));
   const ends = start ? times.filter(t => Date.parse(instant(date, t)) - Date.parse(instant(date, start)) >= 30 * 60000 && (isAdmin || !overlaps(start, t))) : [];
   const total = start && end ? selectedPlaces.reduce((sum, p) => sum + Math.round((Date.parse(instant(date, end)) - Date.parse(instant(date, start))) / 3600000 * p.hourlyPrice), 0) : 0;
@@ -35,6 +52,7 @@ export default function BookingForm({ place: initialPlace, places, date: initial
     if (!clientId || (isAdmin && !clients.some(c => c.id === clientId))) errors.clientId = 'Выберите клиента';
     if (masterId && !masters.some(m => m.id === masterId)) errors.masterId = 'Выберите доступного мастера';
     if (!selectedPlaces.length) errors.placeIds = 'Выберите хотя бы одно место';
+    else if (overlappingPlaces(selectedPlaces)) errors.placeIds = 'Выберите кабинет целиком или отдельные места: они не должны дублироваться.';
     else if (reserved) errors.placeIds = 'Место закреплено за мастером на этот день';
     if (!start) errors.start = 'Выберите время начала';
     else if (!starts.includes(start)) errors.start = 'Это время уже недоступно. Выберите другое';
@@ -61,9 +79,10 @@ export default function BookingForm({ place: initialPlace, places, date: initial
   return <><Dialog open onClose={() => !pending && close()} fullWidth maxWidth="sm" fullScreen={mobile}><form noValidate onSubmit={submit}>
     <DialogTitle>{fullDay ? 'Забронировать на день' : places ? 'Записать клиента' : 'Забронировать место'}</DialogTitle><DialogContent><div className={s.form}>
       <div><h2 className={s.heading}>{selectedPlaces.map(p => p.name).join(', ')}</h2><p className={s.muted}>{date.split('-').reverse().join('.')} · {selectedPlaces.length ? money(hourlyPrice) + '/час' : ''} · МСК</p></div>
+      {selectedPlaces.some(p => p.linkedPlaceIds?.length) && <Alert severity="info">Бронирование кабинета занимает все связанные с ним места. Их стоимость уже включена в цену кабинета.</Alert>}
 
 
-      {places && <DateField label="Дата записи" value={date} onChange={value => { setDate(value); setFullDay(false); setStart(''); setEnd(''); setConflicts(null); setError(''); }} />}
+      {places && <DateField label="Дата записи" value={date} onChange={changeDate} />}
       {user?.role === 'admin' && <TextField select required label="Клиент" error={!!fields.clientId} helperText={fields.clientId} value={clients.some(c => c.id === clientId) ? clientId : ''} disabled={!clients.length} onChange={e => setClientId(Number(e.target.value))}>{clients.map(c => <MenuItem key={c.id} value={c.id}>{c.name} · {c.email}</MenuItem>)}</TextField>}
       {places && <><TextField select label="Мастер" error={!!fields.masterId} helperText={fields.masterId} value={masterId} disabled={clientsResource.loading} onChange={e => { const id = Number(e.target.value); setMasterId(id); const selected = masters.find(m => m.id === id); if (selected) { const first = availablePlaces.find(p => selected.workplaceIds.includes(p.id) && !reservedOnDate(p, date)); setPlaceIds(first ? [first.id] : []); } setFullDay(false); setStart(''); setEnd(''); }}><MenuItem value={0}>Без мастера</MenuItem>{masters.map(m => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}</TextField>
       <TextField select required label="Рабочие места" error={!!fields.placeIds} value={selectedPlaces.map(p => p.id)} slotProps={{ select: { multiple: true, renderValue: value => (value as number[]).map(id => choices.find(p => p.id === id)?.name).join(', ') } }} onChange={e => { const value = e.target.value as unknown as number[] | string; setPlaceIds(typeof value === 'string' ? value.split(',').filter(Boolean).map(Number) : value); setFullDay(false); setStart(''); setEnd(''); }} helperText={fields.placeIds || 'Можно выбрать несколько мест. Время записи общее для всех.'}>{choices.map(p => <MenuItem key={p.id} value={p.id} disabled={reservedOnDate(p, date)}><Checkbox checked={placeIds.includes(p.id)} />{p.name} · {money(p.hourlyPrice)}/час{reservedOnDate(p, date) && ' · Занято мастером'}</MenuItem>)}</TextField>

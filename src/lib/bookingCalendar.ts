@@ -19,3 +19,22 @@ export function calendarBookings(date: string, bookings: Booking[]) {
       duration: (Math.min(end, Date.parse(booking.end)) - Math.max(start, Date.parse(booking.start))) / 60000 }))
     .sort((a, b) => a.minute - b.minute || a.booking.id - b.booking.id);
 }
+
+// Several independent places can be occupied at once inside a whole-room column.
+export function calendarLanes<T extends { minute: number; duration: number }>(entries: T[]) {
+  const result: (T & { lane: number; lanes: number })[] = [];
+  let group: (T & { lane: number; lanes: number })[] = [];
+  let ends: number[] = [];
+  let groupEnd = -Infinity;
+  function flush() { for (const entry of group) entry.lanes = ends.length; result.push(...group); group = []; ends = []; }
+  for (const entry of [...entries].sort((a, b) => a.minute - b.minute)) {
+    if (entry.minute >= groupEnd) flush();
+    let lane = ends.findIndex(end => end <= entry.minute);
+    if (lane < 0) lane = ends.length;
+    ends[lane] = entry.minute + entry.duration;
+    groupEnd = Math.max(...ends);
+    group.push({ ...entry, lane, lanes: 1 });
+  }
+  flush();
+  return result;
+}
