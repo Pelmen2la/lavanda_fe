@@ -2,7 +2,7 @@
 .bar { max-width: 1240px; margin: auto; padding: 14px 20px 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: Georgia, serif; font-size: 29px; letter-spacing: -1px; line-height: 1; }
 .brand small { display: block; margin-top: 5px; font: 9px Arial, sans-serif; letter-spacing: 1.7px; text-transform: uppercase; }
-.mark { font-size: 42px; color: var(--lavender); }
+.mark { display: block; width: 40px; height: 48px; object-fit: contain; flex-shrink: 0; }
 .auth { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 .userName { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .login { display: inline-flex; gap: 16px; min-height: 44px; align-items: center; font-size: 14px; }
