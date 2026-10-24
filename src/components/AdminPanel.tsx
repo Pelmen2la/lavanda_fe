@@ -16,7 +16,7 @@ import { weekdays } from '@/lib/workdays';
 import { useApiResource } from '@/lib/useApiResource';
 import s from '@/components/Common.module.css';
 
-type Invitation = { url: string; expiresAt: string; expired: boolean };
+type Invitation = { url: string; expiresAt: string; expired: boolean; lastSentAt: string | null };
 type ClientDraft = { id?: number; name: string; phone: string; email: string; note: string; registered: boolean; role: Client['role']; workplaceIds: number[]; workDays: number[]; reserveWorkdays: boolean };
 type PlaceDraft = { id?: number; name: string; description: string; price: string; active: boolean; linkedPlaceIds: number[] };
 const bookingDatesStorageKey = 'lavanda.admin.bookings.dates';
@@ -41,6 +41,7 @@ export default function AdminPanel() {
   const [client, setClient] = useState<ClientDraft | null>(null); const [place, setPlace] = useState<PlaceDraft | null>(null); const [formError, setFormError] = useState('');
   const [invite, setInvite] = useState<(Invitation & { client: Client }) | null>(null); const [inviteError, setInviteError] = useState(''); const setInviteNotice = setNotice; const [bookingOpen, setBookingOpen] = useState(false); const [search, setSearch] = useState(''); const [roleFilter, setRoleFilter] = useState<'client' | 'master' | 'all'>('all');
   const [deleting, setDeleting] = useState<{ kind: 'clients' | 'workplaces'; id: number; name: string } | null>(null);
+  const [inviteSent, setInviteSent] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [attempted, setAttempted] = useState(false);
   const fields: FieldErrors = attempted ? client ? validateClient(client) : place ? validatePlace(place) : {} : {};
@@ -112,15 +113,18 @@ export default function AdminPanel() {
       const create = renew || !c.hasInvitation;
       const result = await api<Invitation>(`/admin/clients/${c.id}/invite`, create ? {} : undefined);
       setInvite({ ...result, client: { ...c, hasInvitation: true } });
+      if (!renew) setInviteSent(false);
       if (create) { clientsResource.reload(); profileResource.reload(); }
     } catch (e) { if (invite) setInviteError(message(e)); else setError(message(e)); }
     finally { setPending(false); }
   }
   async function emailInvite() {
-    if (!invite) return;
+    if (!invite || pending || inviteSent) return;
     setPending(true); setInviteError(''); setInviteNotice('');
     try {
-      const result = await api<{ email: string }>(`/admin/clients/${invite.client.id}/invite/send`, {});
+      const result = await api<{ email: string; lastSentAt: string }>(`/admin/clients/${invite.client.id}/invite/send`, {});
+      setInvite(current => current?.client.id === invite.client.id ? { ...current, lastSentAt: result.lastSentAt } : current);
+      setInviteSent(true);
       setInviteNotice(`Письмо для ${result.email} передано почтовому серверу.`);
     } catch (e) { setInviteError(message(e)); }
     finally { setPending(false); }
@@ -168,10 +172,11 @@ export default function AdminPanel() {
       {invite?.expired ? <Alert severity="warning">Срок приглашения истёк. Обновите ссылку.</Alert> : <p>Действует до {invite && new Date(invite.expiresAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} МСК. Используется один раз.</p>}
       {invite?.url ? <TextField label="Ссылка для регистрации" value={invite.url} multiline slotProps={{ input: { readOnly: true } }} onFocus={e => e.target.select()} /> : <Alert severity="info">Это приглашение создано до обновления системы. Нажмите «Обновить», чтобы получить новую ссылку.</Alert>}
       <p className={s.muted}>При обновлении старая ссылка перестанет работать. Новая будет действовать 7 дней.</p>
+      {invite?.lastSentAt && <p className={s.muted}>Последнее приглашение отправлено: <time dateTime={invite.lastSentAt}>{new Date(invite.lastSentAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}</time> МСК</p>}
       {inviteError && <Alert severity="error">{inviteError}</Alert>}<div className={s.actions}>
         <Button disabled={pending || !invite?.url || invite.expired} onClick={async () => { try { await navigator.clipboard.writeText(invite!.url); setInviteNotice('Ссылка скопирована.'); } catch { setInviteError('Выделите ссылку и скопируйте вручную.'); } }}>Скопировать</Button>
         <Button disabled={pending} onClick={() => invite && openInvite(invite.client, true)}>Обновить</Button>
-        {invite?.client.email && <Button variant="contained" disabled={pending || !invite.url || invite.expired} onClick={emailInvite}>{pending ? 'Подождите…' : 'Отправить на почту'}</Button>}
+        {invite?.client.email && !inviteSent && <Button variant="contained" disabled={pending || !invite.url || invite.expired} onClick={emailInvite}>{pending ? 'Подождите…' : 'Отправить на почту'}</Button>}
       </div>
     </div></DialogContent><DialogActions><Button disabled={pending} onClick={() => setInvite(null)}>Закрыть</Button></DialogActions></Dialog>
     <Dialog open={!!deleting} onClose={() => !pending && setDeleting(null)} fullWidth maxWidth="xs">

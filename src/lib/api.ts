@@ -31,7 +31,7 @@ export type User = { id: number; clientId: number; name: string; email: string; 
 export type Workplace = { id: number; name: string; description: string; hourlyPrice: number; active: boolean; blockedWeekdays: number[]; linkedPlaceIds?: number[]; resourceIds?: number[] };
 export type Client = { createdAt: string; id: number; name: string; phone: string; email: string; note: string; registered: boolean; hasInvitation: boolean; role: 'admin' | 'client' | 'master'; workplaceIds: number[]; workDays: number[]; reserveWorkdays: boolean };
 export type Busy = { workplaceId: number; start: string; end: string; own?: boolean; booked?: boolean; blockedByName?: string };
-export type Booking = Busy & { id: number; workplaceName: string; clientId: number; clientName: string; hourlyPrice: number; cancelledAt: string | null; masterId: number | null; masterName: string; resourceIds?: number[] };
+export type Booking = Busy & { id: number; workplaceName: string; clientId: number; clientName: string; hourlyPrice: number; cancelledAt: string | null; masterId: number | null; masterName: string; resourceIds?: number[]; comment: string };
 export const message = (e: unknown) => e instanceof Error ? e.message : 'Не удалось выполнить запрос';
 export const money = (kopecks: number) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(kopecks / 100);
 export const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());

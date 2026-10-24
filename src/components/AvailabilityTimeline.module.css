@@ -6,6 +6,7 @@
 .segment { flex-basis: 0; min-width: 0; padding: 0; border: 0; cursor: pointer; touch-action: manipulation; }
 .segment + .segment { box-shadow: inset 1px 0 0 white; }
 .details { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.comment { white-space: pre-wrap; }
 .segment:first-child { border-radius: 6px 0 0 6px; }
 .segment:last-child { border-radius: 0 6px 6px 0; }
 .segment:only-child { border-radius: 6px; }

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import ts from 'typescript';
 const source = await readFile(new URL('../src/lib/validation.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
-const { validateClient, validatePlace } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { validateClient, validatePlace, validateBookingComment } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const client = { name: 'Анна', email: '', phone: '', note: '', role: 'client', reserveWorkdays: false, workDays: [], workplaceIds: [] };
 test('only the name is required for a client', () => {
   assert.deepEqual(validateClient(client), {});
@@ -28,4 +28,9 @@ test('price rejects empty, negative, excessive and overprecise amounts', () => {
 test('text limits match backend for Cyrillic input', () => {
   assert.ok(validateClient({ ...client, name: 'я'.repeat(101) }).name);
   assert.ok(validatePlace({ name: 'Стол', description: 'я'.repeat(2001), price: '500' }).description);
+});
+
+test('booking comment is optional and counts Unicode characters after trimming', () => {
+  for (const comment of ['', ' \n ', 'Нужна розетка\nСпасибо!', 'я'.repeat(2000), '🙂'.repeat(2000), `  ${'я'.repeat(2000)}  `]) assert.equal(validateBookingComment(comment), '');
+  for (const comment of ['я'.repeat(2001), '🙂'.repeat(2001), 'text\u0000text']) assert.ok(validateBookingComment(comment));
 });

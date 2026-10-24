@@ -1,4 +1,9 @@
 export type FieldErrors = Record<string, string>;
+export function validateBookingComment(comment: string): string {
+  if (Array.from(comment.trim()).length > 2000) return 'Комментарий должен содержать не более 2000 символов';
+  if (comment.includes('\u0000')) return 'Комментарий содержит недопустимый символ';
+  return '';
+}
 const length = (value: string) => new TextEncoder().encode(value).length;
 export function validateClient(c: { name: string; email: string; phone: string; note: string; role: string; reserveWorkdays: boolean; workDays: number[]; workplaceIds: number[] }): FieldErrors {
   const errors: FieldErrors = {};

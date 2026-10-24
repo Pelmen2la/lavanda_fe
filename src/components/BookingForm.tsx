@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, TextField, useMediaQuery } from '@mui/material';
 import { api, ApiError, Booking, Busy, Client, clock, instant, message, money, times, Workplace } from '@/lib/api';
-import type { FieldErrors } from '@/lib/validation';
+import { validateBookingComment, type FieldErrors } from '@/lib/validation';
 import { reservedOnDate } from '@/lib/workdays';
 import { bookingBlocksPlace, overlappingPlaces } from '@/lib/linkedPlaces';
 import { useAuth } from './Providers';
@@ -32,6 +32,7 @@ export default function BookingForm({ place: initialPlace, places, date: initial
   const clients = (clientsResource.data || []).filter(c => c.role === 'client');
   const masters = (clientsResource.data || []).filter(c => c.role === 'master');
   const [masterId, setMasterId] = useState(0);
+  const [comment, setComment] = useState('');
   const [placeIds, setPlaceIds] = useState<number[]>(initialPlace ? [initialPlace.id] : []);
   const availablePlaces = (places || (initialPlace ? [initialPlace] : [])).filter(p => p.active);
   const master = masters.find(c => c.id === masterId);
@@ -58,6 +59,8 @@ export default function BookingForm({ place: initialPlace, places, date: initial
     else if (!starts.includes(start)) errors.start = 'Это время уже недоступно. Выберите другое';
     if (!end) errors.end = 'Выберите время окончания';
     else if (!ends.includes(end)) errors.end = 'Выберите доступный интервал от 30 минут';
+    const commentError = validateBookingComment(comment);
+    if (commentError) errors.comment = commentError;
     return errors;
   }
   const fields = attempted ? validate() : {};
@@ -67,7 +70,7 @@ export default function BookingForm({ place: initialPlace, places, date: initial
     if (Object.keys(validate()).length) { setConflicts(null); return; }
     setPending(true); setError('');
     try {
-      await api('/bookings', { workplaceIds: selectedPlaces.map(p => p.id), clientId, masterId, start: instant(date, start), end: instant(date, end), confirmedConflictIds });
+      await api('/bookings', { workplaceIds: selectedPlaces.map(p => p.id), clientId, masterId, start: instant(date, start), end: instant(date, end), comment: comment.trim(), confirmedConflictIds });
       saved();
     } catch (e) {
       if (isAdmin && e instanceof ApiError && e.status === 409 && e.details && typeof e.details === 'object' && 'conflicts' in e.details && Array.isArray(e.details.conflicts)) {
@@ -93,6 +96,7 @@ export default function BookingForm({ place: initialPlace, places, date: initial
         <TextField select required label="Окончание" error={!!fields.end} helperText={fields.end} value={end} disabled={fullDay || !start} onChange={e => setEnd(e.target.value)}>{ends.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField>
       </div>
       {isAdmin && start && end && overlaps(start, end) && <Alert severity="warning">Выбранное время пересекается с существующими записями. Перед сохранением потребуется подтвердить их полную отмену.</Alert>}
+      <TextField label="Комментарий" multiline minRows={3} value={comment} onChange={e => setComment(e.target.value)} disabled={pending} error={!!fields.comment} helperText={fields.comment || 'Необязательно. До 2000 символов.'} />
       <div className={s.notice}>{total ? <>Стоимость: <strong>{money(total)}</strong><br /></> : null}Онлайн-оплата не требуется. Отменить бронь можно в любое время.</div>
     </div></DialogContent>{(error || (isAdmin && clientsResource.error)) && <div className={s.formError}><Alert severity="error" action={clientsResource.error ? <Button onClick={clientsResource.reload}>Повторить</Button> : undefined}>{error || clientsResource.error}</Alert></div>}<DialogActions><Button onClick={close} disabled={pending}>Назад</Button><Button type="submit" variant="contained" disabled={pending || (isAdmin && clientsResource.loading)}>{pending ? 'Сохраняем…' : 'Подтвердить бронь'}</Button></DialogActions>
   </form></Dialog>
