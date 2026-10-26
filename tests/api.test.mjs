@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 const source = await readFile(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
-const { api } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { api, money } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 
@@ -75,4 +75,11 @@ test('a mutation invalidates pending reads without letting old completions evict
   calls[2].finish({ id: 2 });
   assert.deepEqual(await fresh, { id: 2 });
   assert.deepEqual(await shared, { id: 2 });
+});
+
+test('money preserves kopecks and omits fractional digits for whole rubles', () => {
+  const normalize = value => value.replace(/\s/g, ' ');
+  assert.equal(normalize(money(26250)), '262,5 ₽');
+  assert.equal(normalize(money(35000)), '350 ₽');
+  assert.equal(normalize(money(26251)), '262,51 ₽');
 });

@@ -24,6 +24,7 @@
 .booking > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
 .booking strong { font-size: 14px; }
 .bookingTime { font-weight: 600; }
+.booking .bookingComment { white-space: pre-wrap; overflow-wrap: anywhere; flex-shrink: 1; min-height: 1.4em; }
 .completed { background: #eeedf0; border-color: #d8d5dc; border-left-color: #9a93a2; }
 .linkedBooking { background: #fde7e7; border-color: #e8a0a0; border-left-color: #c62828; color: #891c1c; }
 .booking:hover { filter: brightness(.97); }

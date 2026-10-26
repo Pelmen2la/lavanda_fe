@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import ts from 'typescript';
 const source = await readFile(new URL('../src/lib/bookingGroups.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { groupBookings } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { groupBookings, bookingsTotal } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 test('groups by Moscow day and workplace identity, sorting intervals chronologically', () => {
   const bookings = [
     { id: 3, start: '2026-10-20T10:00:00Z', workplaceId: 1, workplaceName: 'Место' },
@@ -18,4 +18,12 @@ test('groups by Moscow day and workplace identity, sorting intervals chronologic
   assert.deepEqual(days[1].places[0].bookings.map(b => b.id), [4, 3]);
   assert.equal(bookings[0].id, 3);
   assert.deepEqual(groupBookings([]), []);
+});
+
+test('total excludes cancellations and rounds each booking in kopecks', () => {
+  const booking = { start: '2026-10-27T09:00:00+03:00', end: '2026-10-27T09:45:00+03:00', hourlyPrice: 101, cancelledAt: null };
+  assert.equal(bookingsTotal([]), 0);
+  assert.equal(bookingsTotal([booking, booking]), 152);
+  assert.equal(bookingsTotal([booking, { ...booking, hourlyPrice: 100000, cancelledAt: '2026-10-26T10:00:00Z' }]), 76);
+  assert.equal(bookingsTotal([{ ...booking, end: '2026-10-27T11:00:00+03:00', hourlyPrice: 10000 }]), 20000);
 });

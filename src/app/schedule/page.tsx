@@ -1,4 +1,5 @@
 'use client';
+import PlacePhotos from '@/components/PlacePhotos';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Skeleton } from '@mui/material';
@@ -53,7 +54,7 @@ export default function Schedule() {
         const intervals: (Busy | Booking)[] = busy.filter(b => bookingBlocksPlace(b, p)).map(b => placeInterval(b, p, user?.clientId));
         if (reserved && isAdmin) intervals.push({ workplaceId: p.id, start: date + 'T09:00:00+03:00', end: date + 'T21:00:00+03:00' });
 
-        return <article key={p.id} className={`${s.panel} ${s.workplaceCard}`}><div className={s.stack}><div><h2 className={s.heading}>{p.name}</h2><p className={s.muted}>{money(p.hourlyPrice)} / час</p></div><p className={s.note}>{p.description}</p>{!!p.linkedPlaceIds?.length && <p className={s.muted}>Кабинет целиком · связанных мест: {p.linkedPlaceIds.length}. Стоимость указана за весь кабинет.</p>}
+        return <article key={p.id} className={`${s.panel} ${s.workplaceCard}`}><div className={s.stack}><PlacePhotos ids={p.photoIds} name={p.name} /><div><h2 className={s.heading}>{p.name}</h2><p className={s.muted}>{money(p.hourlyPrice)} / час</p></div><p className={s.note}>{p.description}</p>{!!p.linkedPlaceIds?.length && <p className={s.muted}>Кабинет целиком · связанных мест: {p.linkedPlaceIds.length}. Стоимость указана за весь кабинет.</p>}
           <div className={s.workplaceActions}><AvailabilityTimeline key={date} date={date} intervals={intervals} isCabinet={!!p.linkedPlaceIds?.length} bookings={isAdmin ? intervals.filter((b): b is Booking => 'clientName' in b) : undefined} />
           {user?.role === 'master' ? <Link className={s.link} href="/account/">Мои записи →</Link> : user ? <Button variant="outlined" disabled={reserved} onClick={() => setSelected(p)}>Забронировать</Button> : <Link className={s.link} href="/login/">Войти для бронирования →</Link>}</div>
         </div></article>;

@@ -8,6 +8,7 @@ import { bookingBlocksPlace, overlappingPlaces } from '@/lib/linkedPlaces';
 import { useAuth } from './Providers';
 import s from './Common.module.css';
 import DateField from './DateField';
+import PlacePhotos from './PlacePhotos';
 const bookingDateStorageKey = 'lavanda.booking.date';
 export default function BookingForm({ place: initialPlace, places, date: initialDate, busy, clientsResource, close, saved }: { place?: Workplace; places?: Workplace[]; date: string; busy: Busy[]; clientsResource: { data?: Client[]; loading: boolean; error: string; reload: () => void }; close: () => void; saved: () => void }) {
   const { user } = useAuth(); const mobile = useMediaQuery('(max-width:599px)');
@@ -82,6 +83,7 @@ export default function BookingForm({ place: initialPlace, places, date: initial
   return <><Dialog open onClose={() => !pending && close()} fullWidth maxWidth="sm" fullScreen={mobile}><form noValidate onSubmit={submit}>
     <DialogTitle>{fullDay ? 'Забронировать на день' : places ? 'Записать клиента' : 'Забронировать место'}</DialogTitle><DialogContent><div className={s.form}>
       <div><h2 className={s.heading}>{selectedPlaces.map(p => p.name).join(', ')}</h2><p className={s.muted}>{date.split('-').reverse().join('.')} · {selectedPlaces.length ? money(hourlyPrice) + '/час' : ''} · МСК</p></div>
+      {selectedPlaces.map(p => <PlacePhotos key={p.id} ids={p.photoIds} name={p.name} />)}
       {selectedPlaces.some(p => p.linkedPlaceIds?.length) && <Alert severity="info">Бронирование кабинета занимает все связанные с ним места. Их стоимость уже включена в цену кабинета.</Alert>}
 
 

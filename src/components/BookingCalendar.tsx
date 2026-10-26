@@ -48,6 +48,7 @@ export default function BookingCalendar({ date, places, bookings, reload }: { da
             const blockedLabel = `${isCabinet ? 'Забронировано место' : 'Забронирован'}: ${b.workplaceName}`;
             return <Tooltip key={b.id} title={linked ? `${blockedLabel} · ${clock(b.start)}–${clock(b.end)}` : ''} arrow describeChild><button type="button" className={`${s.booking} ${completed ? s.completed : ''} ${linked ? s.linkedBooking : ''}`} style={{ top: minute / 15 * 40, height: duration / 15 * 40 - 3, left: `calc(${lane / lanes * 100}% + 4px)`, width: `calc(${100 / lanes}% - 8px)`, right: 'auto' }} onClick={() => setSelectedId(b.id)} aria-label={`${linked ? blockedLabel + ', ' : ''}${clock(b.start)}–${clock(b.end)}, ${b.clientName}, ${b.workplaceName}`}>
               <span className={s.bookingTime}>{clock(b.start)}–{clock(b.end)}</span><strong>{linked ? blockedLabel : b.clientName}</strong>
+              {b.comment && <span className={s.bookingComment}>{b.comment}</span>}
               {duration >= 45 && <><span>{linked ? b.clientName : completed ? 'Завершена' : 'Подтверждена'}</span>{b.masterName && <span>Мастер: {b.masterName}</span>}<span>{money(Math.round((Date.parse(b.end) - Date.parse(b.start)) / 3600000 * b.hourlyPrice))}</span></>}
             </button></Tooltip>;
           })}

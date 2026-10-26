@@ -1,5 +1,9 @@
 import type { Booking } from './api';
 
+export function bookingsTotal(bookings: Pick<Booking, 'start' | 'end' | 'hourlyPrice' | 'cancelledAt'>[]) {
+  return bookings.reduce((total, booking) => booking.cancelledAt ? total : total + Math.round((Date.parse(booking.end) - Date.parse(booking.start)) / 3600000 * booking.hourlyPrice), 0);
+}
+
 export function groupBookings(bookings: Booking[]) {
   const days = new Map<string, { date: string; places: Map<number, { id: number; name: string; bookings: Booking[] }> }>();
   const formatter = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow' });
