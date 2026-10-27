@@ -114,7 +114,7 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
   return <Dialog open fullWidth maxWidth="sm" onClose={() => !pending && close()}>
     <DialogTitle>Фотографии · {place.name}</DialogTitle>
     <DialogContent><div className={s.editor}>
-      <p>До 10 фотографий, JPEG или PNG до 20 МБ и 20 мегапикселей. При загрузке большие изображения уменьшаются до 1024 пикселей по длинной стороне с сохранением пропорций. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
+      <p>До 10 фотографий, JPEG или PNG до 20 МБ. При загрузке большие изображения уменьшаются до 1920 пикселей по длинной стороне с сохранением пропорций. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
       <Button component="label" variant="outlined" disabled={pending || ids.length >= 10}>Добавить фотографии<input hidden type="file" accept="image/jpeg,image/png" multiple disabled={pending || ids.length >= 10} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} /></Button>
       {progress && <p role="status">{progress}</p>}
       {error && <Alert severity="error">{error}</Alert>}
