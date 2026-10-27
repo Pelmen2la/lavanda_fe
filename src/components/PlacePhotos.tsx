@@ -93,7 +93,7 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
     if (!files.length || pending) return;
     setError('');
     if (files.length + ids.length > 10) { setError('У места может быть не больше 10 фотографий.'); return; }
-    if (files.some(f => !['image/jpeg', 'image/png'].includes(f.type) || f.size > 5 * 1024 * 1024)) { setError('Выберите JPEG или PNG до 5 МБ каждый.'); return; }
+    if (files.some(f => !['image/jpeg', 'image/png'].includes(f.type) || f.size > 20 * 1024 * 1024)) { setError('Выберите JPEG или PNG до 20 МБ каждый.'); return; }
     setPending(true);
     try {
       for (const [i, file] of files.entries()) {
@@ -114,7 +114,7 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
   return <Dialog open fullWidth maxWidth="sm" onClose={() => !pending && close()}>
     <DialogTitle>Фотографии · {place.name}</DialogTitle>
     <DialogContent><div className={s.editor}>
-      <p>До 10 фотографий, JPEG или PNG до 5 МБ и 20 мегапикселей. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
+      <p>До 10 фотографий, JPEG или PNG до 20 МБ и 20 мегапикселей. При загрузке большие изображения уменьшаются до 1024 пикселей по длинной стороне с сохранением пропорций. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
       <Button component="label" variant="outlined" disabled={pending || ids.length >= 10}>Добавить фотографии<input hidden type="file" accept="image/jpeg,image/png" multiple disabled={pending || ids.length >= 10} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} /></Button>
       {progress && <p role="status">{progress}</p>}
       {error && <Alert severity="error">{error}</Alert>}
