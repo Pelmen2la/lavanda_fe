@@ -1,6 +1,7 @@
 'use client';
 import { CaretLeftIcon } from '@phosphor-icons/react/dist/ssr/CaretLeft';
 import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
+import { CalendarBlankIcon } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip } from '@mui/material';
@@ -15,7 +16,7 @@ import s from './BookingCalendar.module.css';
 export function CalendarDatePicker({ date, onChange }: { date: string; onChange: (date: string) => void }) {
   if (!date) return null;
   return <div className={s.datePicker}>
-    <div className={s.dateToolbar}><DateField label="День записей" value={date} onChange={onChange} /><Button onClick={() => onChange(today())}>Сегодня</Button></div>
+    <div className={s.dateToolbar}><DateField label="День записей" value={date} onChange={onChange} /><Button variant="outlined" startIcon={<CalendarBlankIcon size={18} aria-hidden="true" />} sx={{ color: "#654681", backgroundColor: "#f3edf7", borderColor: "#ded0e8", borderRadius: "12px", px: 2, py: 1, textTransform: "none", "&:hover": { backgroundColor: "#e9dff1", borderColor: "#bda5d0" } }} onClick={() => onChange(today())}>Сегодня</Button></div>
     <div className={s.week} aria-label="Выбор дня">
       <button className={s.weekArrow} type="button" aria-label="Предыдущая неделя" onClick={() => onChange(shiftDay(date, -7))}><CaretLeftIcon size={20} aria-hidden="true" /></button>
       {weekDays(date).map(day => <button key={day} type="button" className={`${s.day} ${day === date ? s.selected : ''}`} aria-pressed={day === date} aria-label={dayLabel(day + 'T12:00:00+03:00')} onClick={() => onChange(day)}>
