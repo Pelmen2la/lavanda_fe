@@ -1,4 +1,5 @@
 'use client';
+import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import PlacePhotos from '@/components/PlacePhotos';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -56,7 +57,7 @@ export default function Schedule() {
 
         return <article key={p.id} className={`${s.panel} ${s.workplaceCard}`}><div className={s.stack}><PlacePhotos ids={p.photoIds} name={p.name} /><div><h2 className={s.heading}>{p.name}</h2><p className={s.muted}>{money(p.hourlyPrice)} / час</p></div><p className={s.note}>{p.description}</p>{!!p.linkedPlaceIds?.length && <p className={s.muted}>Кабинет целиком · связанных мест: {p.linkedPlaceIds.length}. Стоимость указана за весь кабинет.</p>}
           <div className={s.workplaceActions}><AvailabilityTimeline key={date} date={date} intervals={intervals} isCabinet={!!p.linkedPlaceIds?.length} bookings={isAdmin ? intervals.filter((b): b is Booking => 'clientName' in b) : undefined} />
-          {user?.role === 'master' ? <Link className={s.link} href="/account/">Мои записи →</Link> : user ? <Button variant="outlined" disabled={reserved} onClick={() => setSelected(p)}>Забронировать</Button> : <Link className={s.link} href="/login/">Войти для бронирования →</Link>}</div>
+          {user?.role === 'master' ? <Link className={s.link} href="/account/">Мои записи <ArrowRightIcon size={18} aria-hidden="true" style={{ verticalAlign: "middle" }} /></Link> : user ? <Button variant="outlined" disabled={reserved} onClick={() => setSelected(p)}>Забронировать</Button> : <Link className={s.link} href="/login/">Войти для бронирования <ArrowRightIcon size={18} aria-hidden="true" style={{ verticalAlign: "middle" }} /></Link>}</div>
         </div></article>;
       })}</div> : <div className={s.empty}><h2 className={s.heading}>Места скоро появятся</h2><p>Администратор ещё не добавил доступные для бронирования рабочие места.</p>{user?.role === 'admin' && <Link className={s.link} href="/admin/">Добавить первое место</Link>}</div>)}
     </div>{selected && user?.role !== 'master' && <BookingForm place={selected} date={date} busy={busy} clientsResource={clientsResource} close={() => setSelected(null)} saved={() => { setSelected(null); setSuccess('Место забронировано.'); busyResource.reload(); }} />}

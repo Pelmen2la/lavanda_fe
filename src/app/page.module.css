@@ -5,7 +5,7 @@
 .intro { color: var(--muted); max-width: 440px; margin: 24px 0; font-size: 15px; line-height: 1.8; }
 .cta { display: inline-flex; justify-content: space-between; align-items: center; gap: 32px; background: var(--lavender); color: white; min-height: 54px; padding: 14px 26px; border-radius: 50px; font-size: 14px; }
 .cta:hover { background: #593d77; }
-.cta span { font-size: 23px; }
+.cta svg { flex-shrink: 0; }
 .caption { margin-top: 16px; color: var(--muted); font-size: 11px; }
 .art { min-height: 345px; border-radius: 160px 160px 24px 24px; position: relative; overflow: hidden; background: #e8dcef; display: flex; align-items: flex-end; justify-content: center; }
 .arch { position: absolute; height: 83%; width: 72%; bottom: 0; border-radius: 150px 150px 0 0; background: #f3eaf7; border: 1px solid #d4c0e1; }
@@ -17,7 +17,7 @@
 .leafTwo { right: 38%; bottom: 20px; transform: rotate(-75deg); background: #b8a5c9; }
 .leafThree { right: 12%; bottom: 12px; transform: rotate(15deg); background: #8d839d; }
 .artLabel { position: relative; z-index: 3; width: 100%; padding: 18px 22px; background: rgb(255 255 255 / 65%); backdrop-filter: blur(8px); font-size: 11px; line-height: 1.5; display: flex; align-items: center; gap: 16px; color: #65566f; }
-.artLabel > span { font-size: 32px; }
+.lavenderMark { display: block; width: 40px; height: 48px; object-fit: contain; flex-shrink: 0; }
 .vertical { position: absolute; right: 10px; top: 44%; writing-mode: vertical-rl; font-size: 8px; letter-spacing: 2px; color: #8c729d; }
 .strip { max-width: 1176px; margin: 10px auto 0; border-block: 1px solid var(--line); display: grid; padding: 20px; gap: 22px; }
 .strip div { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
@@ -31,6 +31,6 @@
 .how h3 { font-size: 17px; margin-bottom: 8px; }
 .how li p { color: var(--muted); font-size: 13px; }
 .bottom { text-align: center; background: #eee6f3; padding: 44px 20px; margin: 0 20px 40px; border-radius: 24px; }
-.bottom > span { display: block; color: var(--lavender); font-size: 40px; margin-bottom: 12px; }
+.bottom > .lavenderMark { margin: 0 auto 12px; }
 .bottom h2 { margin-bottom: 28px; }
 @media (min-width: 760px) { .hero { grid-template-columns: 1.1fr 1fr; align-items: center; padding: 60px 32px; gap: 50px; } .copy h1 { font-size: clamp(64px, 6.3vw, 86px); } .art { min-height: 500px; border-radius: 240px 240px 30px 30px; } .arch > span { font-size: 44px; } .strip { grid-template-columns: repeat(3, 1fr); padding: 30px; gap: 32px; } .strip div { flex-direction: column; align-items: flex-start; gap: 5px; border-right: 1px solid var(--line); } .strip div:last-child { border: 0; } .how { padding: 84px 32px; grid-template-columns: 1fr 1fr; gap: 70px; } .how h2, .bottom h2 { font-size: 49px; } .bottom { max-width: 1176px; margin: 0 auto 50px; padding: 56px; } }

@@ -1,4 +1,6 @@
 'use client';
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/ssr/CaretLeft';
+import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip } from '@mui/material';
@@ -15,12 +17,12 @@ export function CalendarDatePicker({ date, onChange }: { date: string; onChange:
   return <div className={s.datePicker}>
     <div className={s.dateToolbar}><DateField label="День записей" value={date} onChange={onChange} /><Button onClick={() => onChange(today())}>Сегодня</Button></div>
     <div className={s.week} aria-label="Выбор дня">
-      <button className={s.weekArrow} type="button" aria-label="Предыдущая неделя" onClick={() => onChange(shiftDay(date, -7))}>‹</button>
+      <button className={s.weekArrow} type="button" aria-label="Предыдущая неделя" onClick={() => onChange(shiftDay(date, -7))}><CaretLeftIcon size={20} aria-hidden="true" /></button>
       {weekDays(date).map(day => <button key={day} type="button" className={`${s.day} ${day === date ? s.selected : ''}`} aria-pressed={day === date} aria-label={dayLabel(day + 'T12:00:00+03:00')} onClick={() => onChange(day)}>
         <span>{new Intl.DateTimeFormat('ru-RU', { weekday: 'short', timeZone: 'Europe/Moscow' }).format(new Date(day + 'T12:00:00+03:00'))}</span><strong>{Number(day.slice(-2))}</strong>
         <span className={s.todayDot} style={{ visibility: day === today() ? 'visible' : 'hidden' }} />
       </button>)}
-      <button className={s.weekArrow} type="button" aria-label="Следующая неделя" onClick={() => onChange(shiftDay(date, 7))}>›</button>
+      <button className={s.weekArrow} type="button" aria-label="Следующая неделя" onClick={() => onChange(shiftDay(date, 7))}><CaretRightIcon size={20} aria-hidden="true" /></button>
     </div>
   </div>;
 }

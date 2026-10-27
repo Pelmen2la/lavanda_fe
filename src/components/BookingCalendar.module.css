@@ -31,3 +31,5 @@
 .booking:focus-visible, .day:focus-visible, .weekArrow:focus-visible { outline: 2px solid var(--lavender); outline-offset: 2px; z-index: 1; }
 .empty { padding: 36px; color: var(--muted); text-align: center; }
 @media (max-width: 599px) { .week { gap: 1px; grid-template-columns: 22px repeat(7, minmax(0, 1fr)) 22px; } .calendar { grid-template-columns: 52px repeat(var(--places), 180px); } }
+
+.weekArrow { display: flex; align-items: center; justify-content: center; padding: 0; }

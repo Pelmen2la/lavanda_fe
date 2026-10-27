@@ -1,4 +1,7 @@
 'use client';
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
+import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { api, message, photoUrl, Workplace } from '@/lib/api';
@@ -11,7 +14,7 @@ export default function PlacePhotos({ ids = [], name, admin = false }: PhotoProp
   return <>
     <PhotoSlider ids={ids} name={name} admin={admin} onOpen={setOpened} />
     {opened !== null && <Dialog open fullScreen onClose={() => setOpened(null)} aria-label={`Фотографии: ${name}`}>
-      <div className={s.fullscreenHeader}><strong>{name}</strong><Button onClick={() => setOpened(null)} autoFocus aria-label="Закрыть полноэкранный просмотр">Закрыть ✕</Button></div>
+      <div className={s.fullscreenHeader}><strong>{name}</strong><Button onClick={() => setOpened(null)} autoFocus aria-label="Закрыть полноэкранный просмотр" endIcon={<XIcon size={20} aria-hidden="true" />}>Закрыть</Button></div>
       <PhotoSlider ids={ids} name={name} admin={admin} initialIndex={opened} fullscreen />
     </Dialog>}
   </>;
@@ -68,7 +71,7 @@ function PhotoSlider({ ids = [], name, admin = false, initialIndex = 0, fullscre
       onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); move(active + (e.key === 'ArrowRight' ? 1 : -1)); } }} onScroll={e => { const el = e.currentTarget; if (el.clientWidth) setIndex(Math.round(el.scrollLeft / el.clientWidth)); }}>
       {ids.map((id, i) => <div className={s.slide} key={id} role="group" aria-label={`${i + 1} из ${ids.length}`}>{onOpen ? <button type="button" className={s.photoButton} tabIndex={i === active ? 0 : -1} aria-label={`Открыть фото ${i + 1} на весь экран`}><img src={photoUrl(id, admin)} alt={`${name} — фото ${i + 1}`} loading="lazy" draggable={false} /></button> : <img src={photoUrl(id, admin)} alt={`${name} — фото ${i + 1}`} loading="lazy" draggable={false} />}</div>)}
     </div>
-    {ids.length > 1 && <div className={s.controls}><Button type="button" size="small" aria-label="Предыдущее фото" onClick={() => move(active - 1)}>←</Button><span aria-live="polite">{active + 1} / {ids.length}</span><Button type="button" size="small" aria-label="Следующее фото" onClick={() => move(active + 1)}>→</Button></div>}
+    {ids.length > 1 && <div className={s.controls}><Button type="button" size="small" aria-label="Предыдущее фото" onClick={() => move(active - 1)}><ArrowLeftIcon size={20} aria-hidden="true" /></Button><span aria-live="polite">{active + 1} / {ids.length}</span><Button type="button" size="small" aria-label="Следующее фото" onClick={() => move(active + 1)}><ArrowRightIcon size={20} aria-hidden="true" /></Button></div>}
   </section>;
 }
 
