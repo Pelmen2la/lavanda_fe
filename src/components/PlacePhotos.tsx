@@ -89,6 +89,35 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
+  const [dragged, setDragged] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
+  const photoDrag = useRef<{ id: number; pointerId: number } | null>(null);
+  const thumbnails = useRef<HTMLDivElement>(null);
+  function targetAt(e: PointerEvent<HTMLButtonElement>) {
+    const card = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-photo-id]');
+    return card && thumbnails.current?.contains(card) ? Number(card.dataset.photoId) : null;
+  }
+  async function reorder(id: number, target: number) {
+    if (pending || id === target) return;
+    const from = ids.indexOf(id), to = ids.indexOf(target);
+    if (from < 0 || to < 0) return;
+    const previous = ids;
+    const next = [...ids];
+    next.splice(from, 1);
+    next.splice(to, 0, id);
+    setIds(next); setPending(true); setError(''); setProgress('Сохраняем порядок…');
+    try { await api(`/admin/workplaces/${place.id}/photos/order`, { photoIds: next }, 'PUT'); changed(); }
+    catch (e) { setIds(previous); setError(message(e)); }
+    finally { setPending(false); setProgress(''); }
+  }
+  function endPhotoDrag(e: PointerEvent<HTMLButtonElement>, cancelled = false) {
+    const drag = photoDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const target = targetAt(e);
+    photoDrag.current = null; setDragged(null); setDropTarget(null);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!cancelled && target !== null) void reorder(drag.id, target);
+  }
   async function upload(files: File[]) {
     if (!files.length || pending) return;
     setError('');
@@ -116,10 +145,35 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
     <DialogContent><div className={s.editor}>
       <p>До 10 фотографий, JPEG или PNG до 20 МБ. При загрузке большие изображения уменьшаются до 1920 пикселей по длинной стороне с сохранением пропорций. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
       <Button component="label" variant="outlined" disabled={pending || ids.length >= 10}>Добавить фотографии<input hidden type="file" accept="image/jpeg,image/png" multiple disabled={pending || ids.length >= 10} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} /></Button>
+      {ids.length > 1 && <p id="photo-order-help">Перетащите фотографию на нужное место. Можно также выделить её клавишей Tab и менять порядок стрелками.</p>}
       {progress && <p role="status">{progress}</p>}
       {error && <Alert severity="error">{error}</Alert>}
       {!ids.length && <p>Фотографий пока нет.</p>}
-      <div className={s.thumbnails}>{ids.map((id, i) => <div key={id}><img src={photoUrl(id, true)} alt={`${place.name} — фото ${i + 1}`} /><Button color="error" disabled={pending} onClick={() => void remove(id)} aria-label={`Удалить фото ${i + 1}`}>Удалить</Button></div>)}</div>
+      <div className={s.thumbnails} ref={thumbnails}>{ids.map((id, i) => <div key={id} data-photo-id={id} className={`${s.thumbnail} ${dragged === id ? s.dragSource : ''} ${dropTarget === id && dragged !== id ? s.dropTarget : ''}`}>
+        <button type="button" className={s.reorderPhoto} aria-disabled={pending || ids.length < 2} aria-label={`Фото ${i + 1}${i === 0 ? ', обложка' : ''}. Изменить порядок`} aria-describedby={ids.length > 1 ? 'photo-order-help' : undefined}
+          onPointerDown={e => {
+            if (pending || ids.length < 2 || !e.isPrimary || e.button !== 0) return;
+            e.preventDefault(); e.currentTarget.focus();
+            photoDrag.current = { id, pointerId: e.pointerId }; setDragged(id); setDropTarget(id);
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={e => { if (photoDrag.current?.pointerId === e.pointerId) setDropTarget(targetAt(e)); }}
+          onPointerUp={e => endPhotoDrag(e)} onPointerCancel={e => endPhotoDrag(e, true)} onLostPointerCapture={e => endPhotoDrag(e, true)}
+          onKeyDown={e => {
+            if (e.key === 'Escape' && photoDrag.current) {
+              const pointerId = photoDrag.current.pointerId;
+              photoDrag.current = null; setDragged(null); setDropTarget(null);
+              if (e.currentTarget.hasPointerCapture(pointerId)) e.currentTarget.releasePointerCapture(pointerId);
+              e.stopPropagation(); return;
+            }
+            const offset = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -2, ArrowDown: 2 }[e.key];
+            if (offset !== undefined) { e.preventDefault(); if (!photoDrag.current && ids[i + offset] !== undefined) void reorder(id, ids[i + offset]); }
+          }}>
+          <img src={photoUrl(id, true)} alt={`${place.name} — фото ${i + 1}`} draggable={false} />
+          <span>{i === 0 ? '1 · Обложка' : i + 1}</span>
+        </button>
+        <Button color="error" disabled={pending || dragged !== null} onClick={() => void remove(id)} aria-label={`Удалить фото ${i + 1}`}>Удалить</Button>
+      </div>)}</div>
     </div></DialogContent>
     <DialogActions><Button disabled={pending} onClick={close}>Готово</Button></DialogActions>
   </Dialog>;
