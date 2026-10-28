@@ -23,9 +23,11 @@
 .thumbnail { min-width: 0; border-radius: 10px; outline: 2px solid transparent; outline-offset: 2px; }
 .dragSource { opacity: .55; }
 .dropTarget { outline-color: #78638b; background: #f3eff5; }
-.reorderPhoto { display: block; position: relative; width: 100%; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: grab; touch-action: none; user-select: none; }
+.reorderPhoto { display: block; position: relative; width: 100%; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: grab; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .reorderPhoto[aria-disabled="true"] { cursor: default; touch-action: auto; }
 .reorderPhoto:focus-visible { outline: 2px solid #78638b; outline-offset: 2px; }
 .dragSource .reorderPhoto { cursor: grabbing; }
 .reorderPhoto img { display: block; pointer-events: none; }
 .reorderPhoto span { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; border-radius: 6px; background: #fff; color: #403449; font-size: 12px; }
+.dragPreview { overflow: hidden; box-shadow: 0 8px 24px #40344940; cursor: grabbing; pointer-events: none; }
+.dragPreview img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #f3eff5; border-radius: 8px; }
