@@ -10,7 +10,9 @@ export function validateClient(c: { name: string; email: string; phone: string; 
   if (!c.name.trim()) errors.name = 'Введите имя';
   else if (length(c.name.trim()) > 200) errors.name = 'Имя слишком длинное';
   if (c.email.trim() && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim()) || c.email.trim().length > 254)) errors.email = 'Введите корректный email';
-  if (c.phone && !/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/.test(c.phone)) errors.phone = 'Введите полный номер: +7 (999) 123-45-67';
+  // Stored phones arrive as +79991234567; PhoneField only masks their display.
+  const phone = c.phone.trim();
+  if (phone && !/^(?:\+7\d{10}|\+7 \(\d{3}\) \d{3}-\d{2}-\d{2})$/.test(phone)) errors.phone = 'Введите полный номер: +7 (999) 123-45-67';
   if (length(c.note) > 4000) errors.note = 'Заметка слишком длинная';
   if (c.role === 'master' && c.reserveWorkdays) {
     if (!c.workDays.length) errors.workDays = 'Выберите рабочие дни';

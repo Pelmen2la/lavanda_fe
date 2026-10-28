@@ -15,6 +15,23 @@ test('optional contacts must be complete when supplied', () => {
   assert.ok(validateClient({ ...client, phone: '+7 (999)' }).phone);
   assert.deepEqual(validateClient({ ...client, email: 'anna@example.test', phone: '+7 (999) 123-45-67' }), {});
 });
+
+test('existing clients can be edited with the canonical phone returned by the API', () => {
+  for (const registered of [false, true]) {
+    const saved = { ...client, id: 17, registered, phone: '+79991234567' };
+    assert.deepEqual(validateClient({ ...saved, name: 'Новое имя', note: 'Новая заметка' }), {});
+    assert.deepEqual(validateClient({ ...saved, role: 'master' }), {});
+  }
+});
+
+test('phone validation accepts display and stored formats but rejects invalid numbers', () => {
+  for (const phone of ['', '  ', '+79991234567', '+7 (999) 123-45-67', ' +79991234567 ']) {
+    assert.deepEqual(validateClient({ ...client, phone }), {}, phone);
+  }
+  for (const phone of ['+7', '+7999', '+7 (999)', '+7999123456', '+799912345678', '+19991234567', '+7 (999) 123-45-6', '+7 (999) 123-45-678', 'phone79991234567']) {
+    assert.ok(validateClient({ ...client, phone }).phone, phone);
+  }
+});
 test('master reservation requires places and weekdays', () => {
   const master = { ...client, role: 'master', reserveWorkdays: true };
   assert.ok(validateClient(master).workDays);
