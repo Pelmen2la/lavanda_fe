@@ -5,6 +5,7 @@ import { XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { api, message, photoUrl, Workplace } from '@/lib/api';
+import { preparePhoto, validatePhotoFile } from '@/lib/preparePhoto';
 import s from './PlacePhotos.module.css';
 
 type PhotoProps = { ids?: number[]; name: string; admin?: boolean };
@@ -75,11 +76,11 @@ function PhotoSlider({ ids = [], name, admin = false, initialIndex = 0, fullscre
   </section>;
 }
 
-function readPhoto(file: File): Promise<string> {
+function readPhoto(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).split(',')[1]);
-    reader.onerror = () => reject(new Error(`Не удалось прочитать ${file.name}`));
+    reader.onerror = () => reject(new Error('Не удалось прочитать подготовленную фотографию.'));
     reader.readAsDataURL(file);
   });
 }
@@ -122,12 +123,16 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
     if (!files.length || pending) return;
     setError('');
     if (files.length + ids.length > 10) { setError('У места может быть не больше 10 фотографий.'); return; }
-    if (files.some(f => !['image/jpeg', 'image/png'].includes(f.type) || f.size > 20 * 1024 * 1024)) { setError('Выберите JPEG или PNG до 20 МБ каждый.'); return; }
+    const validation = files.map(validatePhotoFile).find(Boolean);
+    if (validation) { setError(validation); return; }
     setPending(true);
     try {
       for (const [i, file] of files.entries()) {
+        setProgress(`Подготавливаем фото ${i + 1} из ${files.length}…`);
+        const prepared = await preparePhoto(file);
+        const data = await readPhoto(prepared);
         setProgress(`Загружаем ${i + 1} из ${files.length}…`);
-        const result = await api<{ id: number }>(`/admin/workplaces/${place.id}/photos`, { data: await readPhoto(file) });
+        const result = await api<{ id: number }>(`/admin/workplaces/${place.id}/photos`, { data });
         setIds(current => [...current, result.id]);
       }
     } catch (e) { setError(message(e) + ' Уже загруженные фотографии сохранены.'); }
@@ -143,8 +148,8 @@ export function PlacePhotoEditor({ place, close, changed }: { place: Workplace; 
   return <Dialog open fullWidth maxWidth="sm" onClose={() => !pending && close()}>
     <DialogTitle>Фотографии · {place.name}</DialogTitle>
     <DialogContent><div className={s.editor}>
-      <p>До 10 фотографий, JPEG или PNG до 20 МБ. При загрузке большие изображения уменьшаются до 1920 пикселей по длинной стороне с сохранением пропорций. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
-      <Button component="label" variant="outlined" disabled={pending || ids.length >= 10}>Добавить фотографии<input hidden type="file" accept="image/jpeg,image/png" multiple disabled={pending || ids.length >= 10} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} /></Button>
+      <p>До 10 фотографий, JPEG, PNG или WebP до 20 МБ. Перед отправкой фото автоматически уменьшается до 1920 пикселей по длинной стороне и сжимается до 1 МБ. Изменения сохраняются сразу. Первая фотография станет обложкой.</p>
+      <Button component="label" variant="outlined" disabled={pending || ids.length >= 10}>Добавить фотографии<input hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple disabled={pending || ids.length >= 10} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} /></Button>
       {ids.length > 1 && <p id="photo-order-help">Перетащите фотографию на нужное место. Можно также выделить её клавишей Tab и менять порядок стрелками.</p>}
       {progress && <p role="status">{progress}</p>}
       {error && <Alert severity="error">{error}</Alert>}
